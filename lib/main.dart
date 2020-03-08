@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:simple_permissions/simple_permissions.dart';
 
 void main() => runApp(MyApp());
 
@@ -20,9 +21,10 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  static const platform = const MethodChannel('samples.flutter.dev/android');
 
-  static const platform = const MethodChannel('samples.flutter.dev/battery');
   String _batteryLevel = 'Unknown battery level.';
+  String _logResult = "";
 
   Future<void> _getBatteryLevel() async {
     String batteryLevel;
@@ -38,11 +40,28 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  Future<void> _saveLogApp() async {
+    try {
+      final String result = await platform.invokeMethod("saveLogApp");
+      _logResult = result;
+    } on PlatformException catch (e) {
+      _logResult = e.message;
+    }
+  }
+
+  requestPermission() async {
+    Permission p = Permission.WriteExternalStorage;
+    final res = await SimplePermissions.requestPermission(p);
+    print("permission request result is " + res.toString());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       child: Scaffold(
-        appBar: AppBar(title: Text("Log Collection"),),
+        appBar: AppBar(
+          title: Text("Log Collection"),
+        ),
         body: Column(
           children: <Widget>[
             Builder(
@@ -51,11 +70,23 @@ class _MainScreenState extends State<MainScreen> {
                 child: Text("Get Battery Level"),
               ),
             ),
-            Text(_batteryLevel)
+            Text(_batteryLevel),
+            Builder(
+              builder: (ctx) => RaisedButton(
+                onPressed: requestPermission,
+                child: Text("Request Write Permission"),
+              ),
+            ),
+            Builder(
+              builder: (ctx) => RaisedButton(
+                onPressed: _saveLogApp,
+                child: Text("Save Logs Android"),
+              ),
+            ),
+            Text(_logResult)
           ],
         ),
       ),
     );
   }
 }
-
